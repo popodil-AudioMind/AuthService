@@ -8,7 +8,6 @@ namespace AuthService.Data
         LoginUser AddLoginUser(LoginUser user);
         bool DeleteLoginUser(Guid Email);
         LoginUser UpdateLoginUser(LoginUser user);
-        LoginUser Login(LoginUser user);
-        string GetSalt(Guid id);
+        /*LoginUser Login(LoginUser user);*/
     }
 }

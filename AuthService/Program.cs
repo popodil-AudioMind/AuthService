@@ -6,6 +6,11 @@ using Steeltoe.Discovery.Client;
 using Steeltoe.Extensions.Configuration;
 using AuthService.Data;
 using AuthService.SQL;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +38,24 @@ catch (Exception)
 }
 
 builder.Services.AddScoped<ISqlLoginUser, SqlLoginUser>();
+builder.Services.AddScoped<EncryptionService, EncryptionService>();
+builder.Services.AddScoped<JwtTokenService, JwtTokenService>();
+//builder.Services.AddScoped<IConfiguration, ConfigurationManager>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = null,
+            ValidAudience = null,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetValue<string>("JWTSecurityKey")))
+        };
+    });
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -46,6 +69,7 @@ DatabaseManagementService.MigrationInitialisation(app);
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

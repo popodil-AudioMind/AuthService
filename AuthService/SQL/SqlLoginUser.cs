@@ -62,7 +62,7 @@ namespace AuthService.SQL
             return users;
         }
 
-        public LoginUser Login(LoginUser user)
+        /*public LoginUser Login(LoginUser user)
         {
             ILoginUser? existingUser = _authContext.LoginUsers.FirstOrDefault(x => x.id == user.id.ToString());
             if (existingUser != null)
@@ -70,17 +70,7 @@ namespace AuthService.SQL
                 if (user.fullHashedPassword == existingUser.hashedPassword) return new LoginUser(existingUser);
             }
             return null;
-        }
-
-        public string GetSalt(Guid id)
-        {
-            string? existingUserSalt = _authContext.LoginUsers.FirstOrDefault(x => x.id == id.ToString()).salt;
-            if (existingUserSalt != null)
-            {
-                return existingUserSalt;
-            }
-            return null;
-        }
+        }*/
 
         public LoginUser UpdateLoginUser(LoginUser user)
         {
