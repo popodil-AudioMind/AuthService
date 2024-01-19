@@ -1,6 +1,7 @@
 ﻿using AuthService.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -40,15 +41,24 @@ namespace AuthService.Services
 
         public string GenerateAuthToken(LoginUser loginUser)
         {
+            List<Claim> claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, loginUser.id.ToString()),
+                new Claim(ClaimTypes.Role, loginUser.role)
+            };
+            foreach (Guid id in loginUser.forumIDs)
+            {
+                claims.Add(new Claim("forums", id.ToString()));
+            }
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new Claim[]
+                Subject = new ClaimsIdentity(claims/*new Claim[]
             {
-                new Claim(ClaimTypes.Name, loginUser.username),
-                new Claim("role", loginUser.role),
-                new Claim("scope", string.Join(" ", loginUser.forumIDs))
-            }),
+                new Claim(ClaimTypes.Name, loginUser.id.ToString()),
+                new Claim(ClaimTypes.Role, loginUser.role),
+                new Claim("forums", string.Join(" ", loginUser.forumIDs))
+            }*/),
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(
                     //new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetValue<string>("JWTSecurityKey"))),

@@ -5,6 +5,11 @@ using AuthService.Models;
 using AuthService.Services;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
+using MassTransit;
+using MassTransit.Transports;
+using Audiomind.RabbitMQ.Moddels;
+using Audiomind.RabbitMQ;
+using System.Security.Claims;
 
 namespace AuthService.Controllers
 {
@@ -15,13 +20,17 @@ namespace AuthService.Controllers
         private readonly ISqlLoginUser _sqlLoginUser;
         private readonly EncryptionService _encryption;
         private readonly JwtTokenService _tokenService;
-        public LoginController(ISqlLoginUser sqlLoginUser, EncryptionService encryption, JwtTokenService tokenService) 
+        private readonly IMessageProducer _messagePublisher;
+        private readonly IPublishEndpoint _publishEndpoint;
+        public LoginController(ISqlLoginUser sqlLoginUser, EncryptionService encryption, JwtTokenService tokenService, IMessageProducer messageProducer, IPublishEndpoint publishEndpoint) 
         {
             _sqlLoginUser = sqlLoginUser;
             _encryption = encryption;
             _tokenService = tokenService;
+            _messagePublisher = messageProducer;
+            _publishEndpoint = publishEndpoint;
 
-            Debug.WriteLine(BCrypt.Net.BCrypt.EnhancedHashPassword("JustAPassword@!", 13));
+            //Debug.WriteLine(BCrypt.Net.BCrypt.EnhancedHashPassword("JustAPassword@!", 13));
         }
 
         [HttpPost("Create", Name = "Create")]
@@ -35,8 +44,9 @@ namespace AuthService.Controllers
             LoginUser createdUser = _sqlLoginUser.AddLoginUser(user);
             if (createdUser == null) return BadRequest("User already exists!");
 
+            _messagePublisher.SendMessage(new CreateMessage() { id = createdUser.id.ToString(), displayName = createdUser.username }, _publishEndpoint);
+
             string token = _tokenService.GenerateAuthToken(createdUser);
-            //TODO: Messaging
             return Created("User database", token);
         }
 
@@ -56,7 +66,7 @@ namespace AuthService.Controllers
             return Ok(token);
         }
 
-        [HttpGet("{email}", Name = "Read")]
+        [HttpGet("{userId}", Name = "Read"), Authorize(Roles = "administrator")]
         public IActionResult GetUser(Guid userId)
         {
             if (userId == Guid.Empty) return BadRequest("UserId field can't be empty.");
@@ -68,7 +78,7 @@ namespace AuthService.Controllers
             return Ok(foundUser);
         }
 
-        [HttpGet("", Name = "ReadAll")]
+        [HttpGet("all", Name = "ReadAll"), Authorize(Roles = "administrator")]
         public IActionResult GetAll()
         {
             List<LoginUser> foundUser = _sqlLoginUser.GetLoginUsers();
@@ -77,10 +87,23 @@ namespace AuthService.Controllers
             return Ok(foundUser);
         }
 
-        [HttpPatch("", Name = "Update")]
-        public IActionResult Update()
+        [HttpPatch("", Name = "Update"), Authorize]
+        public IActionResult Update(LoginUser user)
         {
-            return Ok("Accoutn updated");
+            if (user.id.ToString() == null || user.id.ToString() == string.Empty) return BadRequest("UserId field can't be empty.");
+            if (User.Claims.Contains(new Claim(ClaimTypes.Name, user.id.ToString())) || User.IsInRole("administrator"))
+            {
+                LoginUser existing = _sqlLoginUser.GetLoginUser(user.id);
+                if (existing == null) return NotFound("Couldn't find account.");
+
+                existing.username = user.username;
+                if (user.hashedPassword != null) existing.fullHashedPassword = _encryption.Hash(user.hashedPassword);
+                LoginUser success = _sqlLoginUser.UpdateLoginUser(existing);
+
+                if (success == null) return Problem("Couldn' t update account", string.Empty, 500);
+                return Ok("Account updated");
+            }
+            else return Unauthorized();
         }
 
         [HttpDelete("", Name = "Delete"),Authorize(Roles = "administrator")]
@@ -88,10 +111,10 @@ namespace AuthService.Controllers
         {
             if (userId == Guid.Empty) return BadRequest("UserId field can't be empty.");
             bool success = _sqlLoginUser.DeleteLoginUser(userId);
+            _messagePublisher.SendMessage(new DeleteMessage() { id = userId.ToString() }, _publishEndpoint);
 
             if (!success) return Problem("Couldn't delete user", string.Empty, 500);
 
-            //TODO: Messaging
             return Ok("Account deleted!");
         }
     }

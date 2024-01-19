@@ -11,6 +11,10 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using MassTransit;
+using Audiomind.RabbitMQ.Moddels;
+using Audiomind.RabbitMQ;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +44,7 @@ catch (Exception)
 builder.Services.AddScoped<ISqlLoginUser, SqlLoginUser>();
 builder.Services.AddScoped<EncryptionService, EncryptionService>();
 builder.Services.AddScoped<JwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IMessageProducer, RabbitMQProducer>();
 //builder.Services.AddScoped<IConfiguration, ConfigurationManager>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -57,6 +62,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<ForumConsumer>();
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("localhost", "/", h => {
+            h.Username("guest");
+            h.Password("guest");
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -72,6 +91,13 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseRouting();
+app.UseHttpMetrics();
+
 app.MapControllers();
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapMetrics();
+});
 
 app.Run();

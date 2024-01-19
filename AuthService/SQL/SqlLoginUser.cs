@@ -1,4 +1,5 @@
-﻿using AuthService.Context;
+﻿using Audiomind.RabbitMQ.Moddels;
+using AuthService.Context;
 using AuthService.Data;
 using AuthService.Interfaces;
 using AuthService.Models;
@@ -84,6 +85,21 @@ namespace AuthService.SQL
                 return new LoginUser(existingUser);
             }
             return null;
+        }
+
+        public bool AddForumToUser(ForumMessage message)
+        {
+            ILoginUser? existingUser = _authContext.LoginUsers.FirstOrDefault(x => x.id == message.userId);
+            if (existingUser != null)
+            {
+                if (existingUser.forumIDs == "" || existingUser.forumIDs == string.Empty) existingUser.forumIDs += $"{message.forumId}";
+                else existingUser.forumIDs += $",{message.forumId}";
+
+                _authContext.LoginUsers.Update(existingUser);
+                _authContext.SaveChanges();
+                return true;
+            }
+            return false;
         }
     }
 }
