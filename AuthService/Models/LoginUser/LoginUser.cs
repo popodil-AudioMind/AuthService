@@ -17,7 +17,8 @@ namespace AuthService.Models
             List<string> tempForumIDs = user.forumIDs.Split(',').ToList();
             foreach (string id in tempForumIDs)
             {
-                forumIDs.Add(Guid.Parse(id));
+                if (id != "")
+                    forumIDs.Add(Guid.Parse(id));
             }
         }
 

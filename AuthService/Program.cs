@@ -89,10 +89,10 @@ DatabaseManagementService.MigrationInitialisation(app);
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
-app.UseAuthorization();
 
 app.UseRouting();
 app.UseHttpMetrics();
+app.UseAuthorization();
 
 app.MapControllers();
 app.UseEndpoints(endpoints =>
