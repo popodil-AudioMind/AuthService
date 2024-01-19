@@ -26,10 +26,10 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./Gateway
-          file: ./Gateway/Dockerfile
+          context: ./AuthService
+          file: ./AuthService/Dockerfile
           push: true
-          tags: ${{ secrets.CI_REGISTRY_USER }}/audiomind-gateway:latest
+          tags: ${{ secrets.CI_REGISTRY_USER }}/audiomind-authservice:latest
 
   deploy:
     needs: publish

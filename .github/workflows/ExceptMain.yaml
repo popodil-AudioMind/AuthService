@@ -43,7 +43,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          .\.sonar\scanner\dotnet-sonarscanner begin /k:"popodil-AudioMind_Gateway" /o:"popodil-audiomind" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
+          .\.sonar\scanner\dotnet-sonarscanner begin /k:"popodil-AudioMind_AuthService" /o:"popodil-audiomind" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
           dotnet build
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
   snyk:
@@ -54,14 +54,14 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@master
       - name: Restore dependencies
-        run: dotnet restore ./Gateway.sln
+        run: dotnet restore ./AuthService.sln
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/dotnet@master
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --file=./Gateway.sln --sarif-file-output=snyk.sarif
+          args: --file=./AuthService.sln --sarif-file-output=snyk.sarif
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v2
         with:
