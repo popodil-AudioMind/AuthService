@@ -11,7 +11,7 @@ WORKDIR /src
 COPY ["./AuthService.csproj", "./"]
 RUN dotnet restore "AuthService.csproj"
 COPY . .
-WORKDIR "/src/AuthService"
+WORKDIR "/src"
 RUN dotnet build "AuthService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
