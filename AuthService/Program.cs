@@ -28,8 +28,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDiscoveryClient();
 
 string connectionstring;
-if (builder.Environment.IsDevelopment()) connectionstring = builder.Configuration.GetValue<string>("ConnectionStrings:DevConnection");
-else connectionstring = builder.Configuration.GetValue<string>("ConnectionStrings:DefaultConnection");
+//if (builder.Environment.IsDevelopment()) connectionstring = builder.Configuration.GetValue<string>("ConnectionStrings:DevConnection");
+//else connectionstring = builder.Configuration.GetValue<string>("ConnectionStrings:DefaultConnection");
+connectionstring = builder.Configuration.GetValue<string>("ConnectionStrings:DefaultConnection");
 try
 {
     builder.Services.AddDbContextPool<AuthDatabaseContext>(
@@ -79,7 +80,7 @@ builder.Services.AddMassTransit(x =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-DatabaseManagementService.MigrationInitialisation(app);
+//DatabaseManagementService.MigrationInitialisation(app);
 //if (app.Environment.IsDevelopment())
 //{
     app.UseSwagger();
